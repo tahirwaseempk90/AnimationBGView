@@ -263,7 +263,7 @@ To work on the package and your app together, clone this repository and add it w
 | **Xcode** | 16 |
 | **Dependencies** | None |
 
-The library itself only needs iOS 15 APIs. iOS 16 is the minimum because that's what it's built and tested against: the test suite renders with `ImageRenderer`. See [Platform Support](#platform-support) for what has been run where.
+The library itself only needs iOS 15 APIs. iOS 16 is the minimum because that's what it's built and tested against: the test suite renders with `ImageRenderer`. It has been built and tested with Xcode 16.4 (Swift 6.1), 26.6 (Swift 6.3), and 27.2 (Swift 6.4). See [Platform Support](#platform-support) for what has been run where.
 
 ---
 
@@ -629,7 +629,7 @@ swiftlint lint --strict    # Lint
 | **Snapshots** | 14 reference images per platform, with no snapshot library |
 | **UI** | Six tests of the example app: content over the background, accessibility, live customization with reset, navigation, palettes, and rotation |
 
-All of these pass on macOS 27.2 and on the iOS 27.2 simulator. [CI](.github/workflows/ci.yml) builds with warnings as errors, runs the tests on macOS and on an iOS simulator, runs the UI tests, checks the example project, builds with Swift 6.1, and lints.
+All of these pass locally on macOS 27.2 and the iOS 27.2 simulator, and in CI on macOS 15 and 26 and the iOS 26.5 simulator. [CI](.github/workflows/ci.yml) builds with warnings as errors, runs the package tests on macOS and on an iOS simulator, runs the UI tests, checks that the example project matches its specification, tests with Swift 6.1, and lints.
 
 ---
 
@@ -637,12 +637,12 @@ All of these pass on macOS 27.2 and on the iOS 27.2 simulator. [CI](.github/work
 
 | Platform | Declared minimum | Tested on |
 |---|---|---|
-| **iOS** | 16 | iOS 27.2 simulators: iPhone SE (3rd generation), iPhone 17, iPhone 18 Pro, iPhone 18 Pro Max |
+| **iOS** | 16 | iOS 27.2 simulators: iPhone SE (3rd generation), iPhone 17, iPhone 18 Pro, iPhone 18 Pro Max. In CI, the iOS 26.5 simulator on an iPhone 17 Pro, with the package and UI tests |
 | **iPadOS** | 16 | iPadOS 27.2 simulator: iPad Pro 13-inch (M5) |
-| **macOS** | 13 | macOS 27.2, and the CI runners' macOS |
+| **macOS** | 13 | macOS 27.2 locally, and macOS 15 and 26 in CI |
 
 > [!IMPORTANT]
-> Testing has been on simulators and a Mac, not physical devices. iOS 16 through 26 haven't been run: no older simulator runtimes were available. The code only uses APIs available in the declared minimums, which the compiler checks. Snapshot comparisons only run on OS 27; elsewhere they skip.
+> Testing has been on simulators and Macs, not physical devices. iOS 16 to 25 and macOS 13 and 14 haven't been run, because no simulator runtimes or runners for them were available. The code only uses APIs available in the declared minimums, which the compiler checks. Snapshot comparisons only run on OS 27; elsewhere they skip.
 
 Mac Catalyst, tvOS, watchOS, and visionOS aren't declared, because they haven't been tested.
 
