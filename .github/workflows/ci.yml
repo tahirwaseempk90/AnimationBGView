@@ -1,0 +1,111 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# Naming the shell turns on `pipefail`, so a failing command in a pipe fails the step.
+defaults:
+  run:
+    shell: bash
+
+# SwiftUI only exists on Apple platforms, so every job needs a macOS runner.
+jobs:
+  package:
+    name: Package on macOS
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+      - name: Show toolchain
+        run: |
+          sw_vers
+          xcodebuild -version
+          swift --version
+      - name: Resolve dependencies
+        run: swift package resolve
+      - name: Build with warnings as errors
+        run: swift build -Xswiftc -warnings-as-errors
+      - name: Test
+        run: swift test
+
+  ios:
+    name: Package on iOS Simulator
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+      - name: Build for iOS devices
+        run: >
+          xcodebuild build -scheme AnimationBGView -destination "generic/platform=iOS"
+          CODE_SIGNING_ALLOWED=NO SWIFT_TREAT_WARNINGS_AS_ERRORS=YES
+      - name: Test on an iPhone simulator
+        run: >
+          xcodebuild test -scheme AnimationBGView
+          -destination "platform=iOS Simulator,id=$(python3 Scripts/first-simulator.py iPhone)"
+          CODE_SIGNING_ALLOWED=NO
+
+  example:
+    name: Example app and UI tests
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+      - name: Check the committed project matches project.yml
+        run: |
+          brew install xcodegen
+          cd Example
+          xcodegen generate
+          git diff --exit-code -- AnimationBGViewExample.xcodeproj/project.pbxproj
+      - name: Run UI tests on an iPhone simulator
+        run: >
+          xcodebuild test -project Example/AnimationBGViewExample.xcodeproj
+          -scheme AnimationBGViewExample
+          -destination "platform=iOS Simulator,id=$(python3 Scripts/first-simulator.py iPhone)"
+          -only-testing:AnimationBGViewExampleUITests/ExampleUITests
+          -resultBundlePath ui-tests.xcresult
+      - name: Upload UI test results
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-tests
+          path: ui-tests.xcresult
+
+  compatibility:
+    name: Package with Swift 6.1 (Xcode 16.4)
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: "16.4"
+      - name: Show toolchain
+        run: |
+          xcodebuild -version
+          swift --version
+      - name: Build with warnings as errors
+        run: swift build -Xswiftc -warnings-as-errors
+      - name: Test
+        run: swift test
+
+  lint:
+    name: Lint
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install SwiftLint
+        run: brew install swiftlint
+      - name: Lint
+        run: swiftlint lint --strict
